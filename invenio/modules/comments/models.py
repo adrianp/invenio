@@ -31,6 +31,7 @@ from flask.ext.login import current_user
 from invenio.modules.record_editor.models import Bibrec
 from invenio.modules.accounts.models import User
 from invenio.base.signals import record_after_update
+from .noteutils import MARKERS
 
 
 class CmtRECORDCOMMENT(db.Model):
@@ -66,8 +67,9 @@ class CmtRECORDCOMMENT(db.Model):
     reply_order_cached_data = db.Column(db.Binary, nullable=True)
     bibrec = db.relationship(Bibrec, backref='recordcomments')
     user = db.relationship(User, backref='recordcomments')
-    replies = db.relationship('CmtRECORDCOMMENT', backref=db.backref(
-        'parent', remote_side=[id], order_by=date_creation))
+    replies = db.relationship('CmtRECORDCOMMENT', backref=db.backref('parent',
+        remote_side=[id], order_by=date_creation))
+    notes = db.relationship('CmtNOTE', backref='parent')
 
     @property
     def is_deleted(self):
@@ -81,7 +83,7 @@ class CmtRECORDCOMMENT(db.Model):
             CmtCOLLAPSED.id_user == id_user)).count() > 0
 
     def collapse(self, id_user):
-        """Collapses comment beloging to user."""
+        """Collapses comment belonging to user."""
         c = CmtCOLLAPSED(id_bibrec=self.id_bibrec, id_cmtRECORDCOMMENT=self.id,
                          id_user=id_user)
         try:
@@ -91,7 +93,7 @@ class CmtRECORDCOMMENT(db.Model):
             db.session.rollback()
 
     def expand(self, id_user):
-        """Expands comment beloging to user."""
+        """Expands comment belonging to user."""
         CmtCOLLAPSED.query.filter(db.and_(
             CmtCOLLAPSED.id_bibrec == self.id_bibrec,
             CmtCOLLAPSED.id_cmtRECORDCOMMENT == self.id,
@@ -178,7 +180,104 @@ class CmtCOLLAPSED(db.Model):
                         primary_key=True)
 
 
+class CmtNOTE(db.Model):
+    """Represents a review extracted from a comment"""
+
+    __tablename__ = 'cmtNOTE'
+
+    id = \
+        db.Column(db.Integer(15, unsigned=True),
+                  primary_key=True,
+                  autoincrement=True,
+                  nullable=False,
+                  unique=True)
+
+    id_cmtRECORDCOMMENT = \
+        db.Column(db.Integer(15, unsigned=True),
+                  db.ForeignKey(CmtRECORDCOMMENT.id),
+                  nullable=True,
+                  unique=False)
+
+    id_bibrec = \
+        db.Column(db.MediumInteger(8, unsigned=True),
+                  db.ForeignKey(Bibrec.id),
+                  nullable=True,
+                  unique=False)
+
+    # the parent note in a hierarchy (e.g., Note on Page 1, Figure 2)
+    id_parent = \
+        db.Column(db.Integer(15, unsigned=True),
+                  db.ForeignKey(id),
+                  nullable=True,
+                  unique=True)
+
+    # Page, Figure, etc.
+    marker_type = \
+        db.Column(db.Enum(*MARKERS.keys(), name='marker_type'),
+                  primary_key=False,
+                  nullable=False,
+                  unique=False)
+
+    # Page 1, Figure 2, etc.
+    marker_location = \
+        db.Column(db.Text,
+                  primary_key=False,
+                  nullable=True,
+                  unique=False)
+
+    body = \
+        db.Column(db.Text,
+                  primary_key=False,
+                  nullable=True,
+                  unique=False)
+
+    child_note = \
+        db.relationship("CmtNOTE",
+                        uselist=False,
+                        backref=db.backref('parent_note', remote_side=[id]))
+
+    cmtRECORDCOMMENT = db.relationship(CmtRECORDCOMMENT)
+
+    bibrec = db.relationship(Bibrec, uselist=False)
+
+
+class CmtNOTECOLLAPSED(db.Model):
+    """Represents a CmtNOTECOLLAPSED record."""
+
+    __tablename__ = 'cmtNOTECOLLAPSED'
+
+    id = \
+        db.Column(db.Integer(15, unsigned=True),
+                  primary_key=True,
+                  autoincrement=True,
+                  nullable=False,
+                  unique=True)
+
+    id_bibrec = \
+        db.Column(db.MediumInteger(8, unsigned=True),
+                  db.ForeignKey(Bibrec.id),
+                  primary_key=False,
+                  nullable=False,
+                  unique=False)
+
+    # e.g., P1-F2 is the path for a note on Page 1, Figure 2
+    path = \
+        db.Column(db.Text,
+                  primary_key=False,
+                  nullable=False,
+                  unique=False)
+
+    id_user = \
+        db.Column(db.Integer(15, unsigned=True),
+                  db.ForeignKey(User.id),
+                  primary_key=False,
+                  nullable=False,
+                  unique=False)
+
+
 __all__ = ['CmtRECORDCOMMENT',
            'CmtACTIONHISTORY',
            'CmtSUBSCRIPTION',
-           'CmtCOLLAPSED']
+           'CmtCOLLAPSED',
+           'CmtNOTE',
+           'CmtNOTECOLLAPSED']

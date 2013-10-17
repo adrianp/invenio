@@ -1,0 +1,100 @@
+{#
+## This file is part of Invenio.
+## Copyright (C) 2013 CERN.
+##
+## Invenio is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License as
+## published by the Free Software Foundation; either version 2 of the
+## License, or (at your option) any later version.
+##
+## Invenio is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with Invenio; if not, write to the Free Software Foundation, Inc.,
+## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+#}
+{%- extends "comments/base.html" -%}
+
+{%- block custom -%}
+
+  {%- if notes -%}
+    <ul class="comments unstyled">
+      {%- for key, value in notes.iteritems() recursive -%}
+        {%- if key == "root" -%}
+          {%- for n in value -%}
+            <li name="{{ n.id }}">
+              <h4>
+                <small>
+                  <a class="pull-right" title="{{ _('Permalink to this note') }}" href="#{{ n.id }}">¶</a>
+                </small>
+              </h4>
+
+              <blockquote>
+                <p style="font-size:90%;">
+                  {{ n.body|quoted_txt2html(indent_html=('<span style="border-left: 3px solid #CCC; padding-left:5px;">',
+                                       '</span>'))|safe }}
+                </p>
+                <small>
+                  {%- set parent = get_original_comment(n) -%}
+                  {%- if parent.user -%}
+                    <img src="{{ parent.user.email|gravatar(size=14, default=url_for('static', filename='img/user-icon-1-16x16.gif', _external=True)) }}" alt="avatar"/>
+                    <a href="{{ url_for('webmessage.add', sent_to_user_nicks=parent.user.nickname) }}">
+                      {{ parent.user.nickname }}
+                    </a>
+                  {%- else -%}
+                    <img src="/img/user-icon-1-16x16.gif" alt="avatar"/>
+                    {{ _('Guest') }}
+                  {%- endif -%}
+
+                  &nbsp;
+
+                  -
+                  <i class="icon-time"></i>
+                  {{ parent.date_creation }}
+                  -
+                  <a title="{{ _('Reply to original comment') }}"
+                     data-toggle="modal"
+                     href="{{ url_for('comments.add_comment', recid=recid, in_reply=parent.id) }}">
+                    {{ _('Reply to original comment') }}
+                  </a>
+                </small>
+              </blockquote>
+            </li>
+          {%- endfor -%} {# n in notes[group] #}
+        {%- else -%}
+          {%- if key != 'toggle' -%}
+            <a class="collapse-comment
+                  pull-left{{ ' collapsed' if note_is_collapsed(recid, value['toggle']) }}"
+               style="margin-right: 5px;"
+               data-toggle="collapse"
+               data-target="#collapse-{{ wash_html_id(value['toggle']) }}"
+               href="{#{ url_for('comments.notes_toggle', recid=recid, note_path=value['toggle']) }#}">
+              <i class="icon-chevron-down"></i>
+              </a>
+            <h4>
+              {{ _('Notes on') }} {{ get_note_title(key) }}
+            </h4>
+              <div id="collapse-{{ wash_html_id(value['toggle']) }}"
+                 data-action="{{ url_for('comments.notes_toggle', recid=recid, path=value['toggle']) }}"
+                 class="collapse{{ ' in' if not note_is_collapsed(recid, value['toggle']) }}">
+                <ul class="unstyled" style="padding-left: 20px;">
+                  {{ loop(value.items()) }}
+                </ul>
+              </div>
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%} {# group in notes #}
+    </ul>  <!-- /comments -->
+
+    {{ super() }} {# bottom 'write' comment from base #}
+
+  {%- else -%}
+    <div class="alert alert-info">
+      {{ _('There are no notes. Be the first commenting this record.') }}
+    </div>
+  {%- endif -%}
+
+{%- endblock custom -%}

@@ -25,9 +25,9 @@
   <div class="{{ 'modal-body' if request.is_xhr }}">
     {{ form.csrf_token }}
     {{ render_field(form.in_reply_to_id_cmtRECORDCOMMENT) }}
-    {{ render_field(form.title) }}
-    {{ render_field(form.body) }}
-    {{ render_field(form.star_score) }}
+    {{ render_field(form.title, class="span3") }}
+    {{ render_field(form.body, rows="13", class="span3") }}
+    {{ render_field(form.star_score, class="span3") }}
   </div>
   <div class="{{ 'modal-footer ' if request.is_xhr else 'form-actions'}}">
         <input type="submit" name="send_button" value="{{ _("Send") }}" class="btn btn-primary"/>

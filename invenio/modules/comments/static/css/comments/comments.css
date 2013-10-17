@@ -9,3 +9,8 @@
 .comments li {
     min-height: 10px;
 }
+
+.popover {
+    z-index: 9999;
+    position: fixed;
+}

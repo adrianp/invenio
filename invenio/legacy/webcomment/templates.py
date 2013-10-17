@@ -913,10 +913,11 @@ class Template:
                                                   button = reviews and _('Write a review') or _('Write a comment'))
 
         if reviews:
-            total_label = _("There is a total of %s reviews")
+            total_label = _("There is a total of %(total)s reviews",
+                            total=total_nb_comments)
         else:
-            total_label = _("There is a total of %s comments")
-        total_label %= total_nb_comments
+            total_label = _("There is a total of %(total)s comments",
+                            total=total_nb_comments)
 
         review_or_comment_first = ''
         if reviews == 0 and total_nb_comments == 0 and can_send_comments:
@@ -1206,10 +1207,10 @@ class Template:
         else:
             (uid, nickname, display) = get_user_info(uid)
             link = '<a href="%s/youraccount/edit">' % CFG_SITE_SECURE_URL
-            note = _("Note: you have not %(x_url_open)sdefined your nickname%(x_url_close)s. %(x_nickname)s will be displayed as the author of this comment.") % \
-                {'x_url_open': link,
-                 'x_url_close': '</a>',
-                 'x_nickname': ' <br /><i>' + display + '</i>'}
+            note = _("Note: you have not %(x_url_open)sdefined your nickname%(x_url_close)s. %(x_nickname)s will be displayed as the author of this comment.",
+                     x_url_open=link,
+                     x_url_close='</a>',
+                     x_nickname=' <br /><i>' + display + '</i>')
 
         if not CFG_WEBCOMMENT_USE_RICH_TEXT_EDITOR:
             note +=  '<br />' + '&nbsp;'*10 + cgi.escape('You can use some HTML tags: <a href>, <strong>, <blockquote>, <br />, <p>, <em>, <ul>, <li>, <b>, <i>')

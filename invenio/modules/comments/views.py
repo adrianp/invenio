@@ -26,8 +26,8 @@ from flask import g, render_template, request, flash, redirect, url_for, \
     current_app, abort, Blueprint
 from invenio.ext.sqlalchemy import db
 from invenio.utils.mail import email_quote_txt
-from .models import CmtRECORDCOMMENT, CmtSUBSCRIPTION, \
-                                     CmtACTIONHISTORY
+from .models import CmtRECORDCOMMENT, CmtSUBSCRIPTION, CmtACTIONHISTORY, \
+    CmtNOTE
 from .forms import AddCmtRECORDCOMMENTForm, AddCmtRECORDCOMMENTFormReview
 from invenio.base.i18n import _
 from invenio.base.decorators import templated
@@ -135,10 +135,24 @@ def add_comment(recid):
         c.id_user = uid
         c.date_creation = datetime.now()
         c.star_score = 0
+
+        if cfg['CFG_COMMENTS_NOTES_ENABLED']:
+            from .noteutils import extract_notes_from_comment, model_note
+            revs = extract_notes_from_comment(c.body)
+            if len(revs) > 0:
+                for rev in revs:
+                    r = model_note(rev)
+                    r.id_cmtRECORDCOMMENT = c.id
+                    r.id_bibrec = recid
+                    c.notes.append(r)
+
         try:
             db.session.add(c)
             db.session.commit()
             flash(_('Comment was sent'), "info")
+            from urlparse import urlparse
+            if 'notes' in urlparse(request.referrer).path:
+                return redirect(url_for('comments.notes', recid=recid))
             return redirect(url_for('comments.comments', recid=recid))
         except:
             db.session.rollback()
@@ -195,7 +209,9 @@ def comments(recid):
         CmtRECORDCOMMENT.in_reply_to_id_cmtRECORDCOMMENT == 0,
         CmtRECORDCOMMENT.star_score == 0
     )).order_by(CmtRECORDCOMMENT.date_creation).all()
-    return render_template('comments/comments.html', comments=comments)
+    return render_template('comments/comments.html',
+                           comments=comments,
+                           option='comments')
 
 
 @blueprint.route('/<int:recid>/reviews', methods=['GET', 'POST'])
@@ -334,3 +350,74 @@ def subscriptions():
     subscriptions = CmtSUBSCRIPTION.query.filter(
         CmtSUBSCRIPTION.id_user == uid).all()
     return dict(subscriptions=subscriptions)
+
+
+@blueprint.route('/<int:recid>/notes', methods=['GET', 'POST'])
+@request_record
+def notes(recid):
+    """View for the record notes extracted from comments"""
+
+    if not cfg['CFG_COMMENTS_NOTES_ENABLED']:
+        return redirect(url_for('comments.comments', recid=recid))
+
+    from invenio.modules.access.local_config import VIEWRESTRCOLL
+    from invenio.modules.access.mailcookie import \
+        mail_cookie_create_authorize_action
+    from .api import check_user_can_view_comments
+    auth_code, auth_msg = check_user_can_view_comments(current_user, recid)
+    if auth_code and current_user.is_guest:
+        cookie = mail_cookie_create_authorize_action(VIEWRESTRCOLL, {
+            'collection': g.collection})
+        url_args = {'action': cookie, 'ln': g.ln, 'referer': request.referrer}
+        flash(_("Authorization failure"), 'error')
+        return redirect(url_for('webaccount.login', **url_args))
+    elif auth_code:
+        flash(auth_msg, 'error')
+        abort(401)
+
+    from .noteutils import get_note_title, prepare_notes, note_is_collapsed, \
+        get_original_comment
+    from sqlalchemy.orm import aliased
+
+    cmt = aliased(CmtRECORDCOMMENT)  # for SQL JOIN notes - comments
+    notes = prepare_notes(CmtNOTE.query.
+                          filter(CmtNOTE.id_bibrec == recid).
+                          join(cmt, CmtNOTE.parent).
+                          order_by(cmt.date_creation,
+                                   CmtNOTE.marker_type,
+                                   CmtNOTE.marker_location).all())
+
+    if CmtRECORDCOMMENT.query.filter(CmtRECORDCOMMENT.id_bibrec == recid).count() > 0:
+        flash(_('This is a summary of all the comments that includes only the \
+                existing notes. The full discussion is available <a href="' +
+                url_for('comments.comments', recid=recid) +
+                '">here</a>.'), "info")
+
+    from invenio.utils.washers import wash_html_id
+
+    return render_template('comments/notes.html',
+                           notes=notes,
+                           option='notes',
+                           get_note_title=get_note_title,
+                           note_is_collapsed=note_is_collapsed,
+                           get_original_comment=get_original_comment,
+                           wash_html_id=wash_html_id)
+
+
+@blueprint.route('/<int:recid>/notes_toggle/<string:path>',
+                 methods=['GET', 'POST'])
+@login_required
+@request_record
+def notes_toggle(recid, path):
+    """Toggles notes collapsed/ expanded."""
+    from .noteutils import note_collapse, note_expand, note_is_collapsed
+
+    if note_is_collapsed(recid, path):
+        note_expand(recid, path)
+    else:
+        note_collapse(recid, path)
+
+    if not request.is_xhr:
+        return redirect(url_for('comments.notes', recid=recid))
+    else:
+        return 'OK'

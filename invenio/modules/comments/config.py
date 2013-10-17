@@ -30,6 +30,8 @@ CFG_WEBCOMMENT_ACTION_CODE = {
     'REPORT_ABUSE': 'A'
 }
 
+CFG_COMMENTS_NOTES_ENABLED = False
+
 # Exceptions: errors
 class InvenioWebCommentError(Exception):
     """A generic error for WebComment."""
