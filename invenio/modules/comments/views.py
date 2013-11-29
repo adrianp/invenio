@@ -20,10 +20,11 @@
 """WebSearch Flask Blueprint"""
 
 from datetime import datetime
+import os
 import socket
 
 from flask import g, render_template, request, flash, redirect, url_for, \
-    current_app, abort, Blueprint
+    current_app, abort, Blueprint, safe_join, jsonify
 from invenio.ext.sqlalchemy import db
 from invenio.utils.mail import email_quote_txt
 from .models import CmtRECORDCOMMENT, CmtSUBSCRIPTION, CmtACTIONHISTORY, \
@@ -38,6 +39,10 @@ from invenio.ext.principal import permission_required
 #from invenio.config import CFG_SITE_RECORD
 CFG_SITE_RECORD = 'record'
 from invenio.base.globals import cfg
+from invenio.utils.shell import run_shell_command
+from .noteutils import get_note_title, prepare_notes, note_is_collapsed, \
+    get_original_comment
+from sqlalchemy.orm import aliased
 
 blueprint = Blueprint('comments', __name__, url_prefix="/" + CFG_SITE_RECORD,
                       template_folder='templates', static_folder='static')
@@ -375,17 +380,16 @@ def notes(recid):
         flash(auth_msg, 'error')
         abort(401)
 
-    from .noteutils import get_note_title, prepare_notes, note_is_collapsed, \
-        get_original_comment
-    from sqlalchemy.orm import aliased
-
-    cmt = aliased(CmtRECORDCOMMENT)  # for SQL JOIN notes - comments
-    notes = prepare_notes(CmtNOTE.query.
-                          filter(CmtNOTE.id_bibrec == recid).
-                          join(cmt, CmtNOTE.parent).
-                          order_by(cmt.date_creation,
-                                   CmtNOTE.marker_type,
-                                   CmtNOTE.marker_location).all())
+    if cfg['CFG_COMMENTS_PREVIEW_ENABLED']:
+        notes = []
+    else:
+        cmt = aliased(CmtRECORDCOMMENT)  # for SQL JOIN notes - comments
+        notes = prepare_notes(CmtNOTE.query.
+                              filter(CmtNOTE.id_bibrec == recid).
+                              join(cmt, CmtNOTE.parent).
+                              order_by(cmt.date_creation,
+                                       CmtNOTE.marker_type,
+                                       CmtNOTE.marker_location).all())
 
     if CmtRECORDCOMMENT.query.filter(CmtRECORDCOMMENT.id_bibrec == recid).count() > 0:
         flash(_('This is a summary of all the comments that includes only the \
@@ -421,3 +425,92 @@ def notes_toggle(recid, path):
         return redirect(url_for('comments.notes', recid=recid))
     else:
         return 'OK'
+
+
+@blueprint.route('/<int:recid>/page', methods=['GET'])
+@request_record
+def page(recid):
+    if not cfg['CFG_COMMENTS_PREVIEW_ENABLED']:
+        return '404', 'Not Found'
+    import base64
+    directory = current_app.instance_path + "/previews/" + str(recid)
+    pdf = get_pdf_path(recid)
+    if pdf is None:
+        return '404', 'Not Found'
+    if not os.path.isdir(directory):
+        # generate previews
+        os.mkdir(directory)
+        cmd_pdftk = "pdftk %s burst output %s/pg_%s.pdf"
+        (exit_status, output_std, output_err) = \
+            run_shell_command(cmd_pdftk, args=(pdf, directory, '%d'))
+        cmd_pdftk = '%s -flatten -density 300 %s %s/`basename %s .pdf`.png'
+        for f in os.listdir(directory):
+            if f.endswith(".pdf"):
+                fn = safe_join(directory, f)
+                (exit_status, output_std, output_err) = \
+                    run_shell_command(cmd_pdftk, args=(str(cfg["CFG_PATH_IMAGE_MAGICK_CONVERT"]),
+                                                       fn, directory, fn))
+    file = open(safe_join(directory, "pg_" +
+                          request.args.get('page', type=str) +
+                          ".png"),
+                'r')
+    stream = file.read()
+    encoded_stream = base64.b64encode(stream)
+    return encoded_stream
+
+
+@blueprint.route('/<int:recid>/maxpage', methods=['GET'])
+@request_record
+def maxpage(recid):
+    """Returns the number of pages for PDF records via AJAX"""
+    cmd_pdftk = '%s %s dump_data output | grep NumberOfPages'
+    pdf = get_pdf_path(recid)
+    if pdf is not None:
+        (exit_status, output_std, output_err) = \
+            run_shell_command(cmd_pdftk, args=(str(cfg['CFG_PATH_PDFTK']), pdf))
+        if int(exit_status) == 0 and len(output_err) == 0:
+            return jsonify(maxpage=int(output_std.strip().split(' ')[1]))
+    return jsonify(maxpage=-1)
+
+
+def get_pdf_path(recid):
+    from invenio.legacy.bibdocfile.api import BibDoc
+    record = BibDoc.create_instance(recid)
+    path = record.get_filepath(".pdf", record.get_latest_version())
+    if os.path.isfile(path):
+        return str(path)
+    return None
+
+
+@blueprint.route('/<int:recid>/notes_page', methods=['GET'])
+@request_record
+def notes_page(recid):
+    page = request.args.get('page', type=int)
+    cmt = aliased(CmtRECORDCOMMENT)  # for SQL JOIN notes - comments
+    if page == -1:
+        # return all notes
+        notes = prepare_notes(CmtNOTE.query.
+                              filter(CmtNOTE.id_bibrec == recid).
+                              join(cmt, CmtNOTE.parent).
+                              order_by(cmt.date_creation,
+                                       CmtNOTE.marker_type,
+                                       CmtNOTE.marker_location).all())
+    else:
+        #return notes on P.$page
+        notes = prepare_notes(CmtNOTE.query.
+                              filter(CmtNOTE.id_bibrec == recid,
+                                     CmtNOTE.marker_type == 'P',
+                                     CmtNOTE.marker_location == page).
+                              join(cmt, CmtNOTE.parent).
+                              order_by(cmt.date_creation,
+                                       CmtNOTE.marker_type,
+                                       CmtNOTE.marker_location).all())
+
+    from invenio.utils.washers import wash_html_id
+    return render_template('comments/notes_fragment.html',
+                           notes=notes,
+                           option='notes',
+                           get_note_title=get_note_title,
+                           note_is_collapsed=note_is_collapsed,
+                           get_original_comment=get_original_comment,
+                           wash_html_id=wash_html_id)

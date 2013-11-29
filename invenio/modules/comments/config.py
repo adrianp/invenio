@@ -31,6 +31,7 @@ CFG_WEBCOMMENT_ACTION_CODE = {
 }
 
 CFG_COMMENTS_NOTES_ENABLED = False
+CFG_COMMENTS_PREVIEW_ENABLED = False
 
 # Exceptions: errors
 class InvenioWebCommentError(Exception):

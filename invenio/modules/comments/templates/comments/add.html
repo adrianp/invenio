@@ -16,8 +16,9 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #}
-{% from "_formhelpers.html" import render_field with context %}
-{% macro add_comment() %}
+
+{%- from "_formhelpers.html" import render_field with context -%}
+{%- macro add_comment() -%}
   <form name="write_message"
         action="{{ url_for('comments.add_comment', recid=recid) }}"
         style="{{ 'margin-bottom:0px;' if request.is_xhr }}"
@@ -28,8 +29,9 @@
       {{ render_field(form.title, class="span3") }}
       {{ render_field(form.body,
                       rows="15",
+                      autofocus=true,
                       class="span3",
-                      id="comment_textarea",
+                      id="comment-textarea",
                       title=_("Notes Help"),
                       popover_content=form.notes_howto if config.CFG_COMMENTS_NOTES_ENABLED else '') }}
     </div>
@@ -40,15 +42,17 @@
       {%- endif -%}
     </div>
   </form>
-{% endmacro %}
+{%- endmacro -%}
 
 {%- if not request.is_xhr -%}
   {# standalone page #}
-  {%- js url_for('comments.static', filename='js/comments/howto_popover.js'), '10-comments' -%}
-  {% extends "records/base.html" %}
-  {% block record_content %}
+  {%- extends "records/base.html" -%}
+  {%- if config.CFG_COMMENTS_NOTES_ENABLED -%}
+    {%- js url_for('comments.static', filename='js/comments/notes_popover.js'), '10-comments' -%}
+  {%- endif -%}
+  {%- block record_content -%}
   {{ add_comment() }}
-  {% endblock %}
+  {%- endblock -%}
 {%- else -%}
   {# modal #}
   <div class="modal-header">

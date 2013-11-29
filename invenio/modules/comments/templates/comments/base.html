@@ -16,28 +16,42 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #}
+
 {%- if not request.is_xhr -%}
   {%- extends "records/base.html" -%}
 {%- endif -%}
 
 {%- css url_for('comments.static', filename='css/comments/comments.css'), '10-comments' -%}
-{%- js url_for('comments.static', filename='js/comments/collapse.js'), '10-comments' -%}
-{%- js url_for('comments.static', filename='js/comments/modal_tweaks.js'), '10-comments' -%}
+{%- js url_for('comments.static', filename='js/comments/comments.js'), '10-comments' -%}
 
-{% macro controls() -%}
+{%- if config.CFG_COMMENTS_NOTES_ENABLED -%}
+  {%- js url_for('comments.static', filename='js/comments/notes_popover.js'), '10-comments' -%}
+{%- endif -%}
+
+{%- if config.CFG_COMMENTS_PREVIEW_ENABLED -%}
+  {%- js url_for('comments.static', filename='js/comments/pdf_viewer.js'), '10-comments' -%}
+{%- endif -%}
+
+{%- if config.CFG_COMMENTS_PREVIEW_ENABLED and config.CFG_COMMENTS_NOTES_ENABLED -%}
+  {%- js url_for('comments.static', filename='js/comments/pdf_notes_helpers.js'), '10-comments' -%}
+{%- endif -%}
+
+{%- macro controls() -%}
   <div class="pull-right">
     {%- if option == 'comments' -%}
       {%- if current_user.is_guest -%}
-        <a class="btn" href="{{ url_for('webaccount.login', referer=request.url) }}">
-          <i class="icon-pencil"></i>
-          {{ _('write comment') }}
-        </a>
+        <a id="add-comment" class="btn" href="{{ url_for('webaccount.login', referer=request.url) }}">
       {%- else -%}
-        <a class="btn" data-toggle="modal" href="{{ url_for('comments.add_comment', recid=recid) }}">
+        <a id="add-comment" class="btn" data-toggle="modal" data-href="{{ url_for('comments.add_comment', recid=recid) }}">
+      {%- endif-%}
           <i class="icon-pencil"></i>
           {{ _('write comment') }}
-        </a>
-      {%- endif -%}
+       </a>
+    {%- elif option == 'notes' and config.CFG_COMMENTS_PREVIEW_ENABLED -%}
+        <button id="all-notes-toggle" type="button" class="btn btn-default">
+          <i class="icon-eye-open"></i>
+          Show all notes
+        </button>
     {%- endif -%}
 
     &nbsp;
@@ -63,46 +77,37 @@
   </div>
 {%- endmacro %}
 
-{% macro controls() -%}
-  <div class="pull-right">
-    {%- if option == 'comments' -%}
-      {%- if current_user.is_guest -%}
-        <a class="btn" href="{{ url_for('webaccount.login', referer=request.url) }}">
-          <i class="icon-pencil"></i>
-          {{ _('write comment') }}
-        </a>
-      {%- else -%}
-        <a class="btn" data-toggle="modal" href="{{ url_for('comments.add_comment', recid=recid) }}">
-          <i class="icon-pencil"></i>
-          {{ _('write comment') }}
-        </a>
-      {%- endif -%}
+{%- macro pdf_pane() -%}
+    {%- if config.CFG_COMMENTS_PREVIEW_ENABLED -%}
+        <div class="span6">
+            <div class="centered">
+                <div class="btn-group">
+                    <button class="btn" id="frst-page">«</button>
+                    <button class="btn" id="prev-page">‹</button>
+                </div>
+                <small id="page-counter"></small>
+                <div class="btn-group">
+                    <button class="btn" id="next-page">›</button>
+                    <button class="btn" id="last-page">»</button>
+                </div>
+            </div>
+            <div id="pdf-preview"
+                 data-toggle="modal"
+                 data-href="{{ url_for('comments.add_comment', recid=recid) }}"
+                 data-href-login="{{ url_for('webaccount.login', referer=request.url) }}"
+                 class="centered"
+                 title="{{ _("Click to add comment on this page") }}">
+                {{ _('Preview not available yet.') }}
+            </div>
+        </div>
     {%- endif -%}
-
-    &nbsp;
-
-    {%- if config.CFG_COMMENTS_NOTES_ENABLED -%}
-      <div class="btn-group">
-        {%- if option == 'comments' -%}
-          <a class="btn active" href="{{ url_for('comments.comments', recid=recid) }}">
-        {%- else -%}
-          <a class="btn" href="{{ url_for('comments.comments', recid=recid) }}">
-        {%- endif -%}
-            {{ _('Comments') }}
-          </a>
-        {%- if option == 'notes' -%}
-          <a class="btn active" href="{{ url_for('comments.notes', recid=recid) }}">
-        {%- else -%}
-          <a class="btn" href="{{ url_for('comments.notes', recid=recid) }}">
-        {%- endif -%}
-            {{ _('Notes') }}
-          </a>
-      </div>
-    {%- endif -%}
-  </div>
 {%- endmacro %}
 
 {%- block record_content -%}
+
+  {%- from "_translate.html" import translate -%}
+  {{ translate(["Page", "of"]) }}
+
   <div class="page-header">
     {{ format_record(recid, 'hs', ln=g.ln)|safe }}
   </div>
@@ -124,7 +129,7 @@
   </div>  <!-- /page-header -->
 
   {%- block custom -%}
-    {{ controls() }}
+    {#{ controls() }#}
   {%- endblock custom -%}
 
   <div style="clear:both"/></div>

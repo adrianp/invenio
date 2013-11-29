@@ -16,8 +16,9 @@
 ## along with Invenio; if not, write to the Free Software Foundation, Inc.,
 ## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #}
-{% from "_formhelpers.html" import render_field with context %}
-{% macro add_comment() %}
+
+{%- from "_formhelpers.html" import render_field with context -%}
+{%- macro add_comment() -%}
 <form name="write_message"
       action="{{ url_for('comments.add_review', recid=recid) }}"
       style="{{ 'margin-bottom:0px;' if request.is_xhr }}"
@@ -37,13 +38,13 @@
       {%- endif -%}
   </div>
 </form>
-{% endmacro %}
+{%- endmacro -%}
 
 {%- if not request.is_xhr -%}
-  {% extends "records/base.html" %}
-  {% block record_content %}
+  {%- extends "records/base.html" -%}
+  {%- block record_content -%}
   {{ add_comment() }}
-  {% endblock %}
+  {%- endblock -%}
 {%- else -%}
 
   <div class="modal-header">
