@@ -19,13 +19,15 @@ along with Invenio; if not, write to the Free Software Foundation, Inc.,
 
 'use strict';
 
+/* exported COMMENTS */
+
 /**
  * General comment pages utilities modules.
  *
  * @module
  * @param {jQuery} $ usually window's jQuery object.
  */
-var COMMENTS = function($) {
+var COMMENTS = (function($) {
 
     /**
      * Attaches collapse/ expand actions to comments' chevrons.
@@ -42,58 +44,26 @@ var COMMENTS = function($) {
         });
     }
 
-    /**
-     * Attaches modal opening to the elements specified by filter or to all
-     * elements with data-toggle="modal".
-     *
-     * @param  {[String]*} filter jQuery selector.
-     */
-    function bindModal(filter) {
-        filter = typeof filter === 'undefined' ? '[data-toggle="modal"]' :
-                                                 filter;
-        $(filter).click(function(e) {
-            e.preventDefault();
-            var $anchor = $(this);
-            var href = $anchor.attr('data-href');
-            $.ajax({
-                url: href,
-                success: function(data) {
-                    $('<div class="modal hide fade" >' + data + '</div>')
-                        .modal();
-                    // focus on textarea
-                    $('#comment-textarea').focus();
-                },
-                error: function(jqXHR) {
-                    if(jqXHR.status === 401) {
-                        window.location.href =
-                            $anchor.attr('data-href-login');
-                    }
+    function addCommentDialog(e, context) {
+        e.preventDefault();
+        var $anchor = $(context);
+        var href = $anchor.attr('data-href');
+        $.ajax({
+            url: href,
+            success: function(data) {
+                $('<div class="modal hide fade" >' + data + '</div>')
+                    .modal();
+                // focus on textarea
+                $('#comment-textarea').focus();
+            },
+            error: function(jqXHR) {
+                if(jqXHR.status === 401) {
+                    window.location.href =
+                        $anchor.attr('data-href-login');
                 }
-            });
-
+            }
         });
     }
-
-    /**
-     * Bootstrapping actions.
-     *
-     * @param  {[String]*} filter to be used with
-     *                     {{#crossLink "bindModal"}}{{/crossLink}}.
-     */
-    function init(modalFilter) {
-        bindModal(modalFilter);
-        bindCollapse();
-    }
-
-    $(document).ready(function() {
-        init();
-    });
-
-    $(window).on('notesdisplayed', function() {
-        // when notes are displayed we need to bindModal() on their reply
-        // buttons
-        init('[data-filter="reply"]');
-    });
 
     $(document).on('hidden.bs.modal', function() {
         // delete any existing modal elements instead of just hiding them
@@ -102,10 +72,7 @@ var COMMENTS = function($) {
     });
 
     return {
-        bindCollapse: bindCollapse
+        bindCollapse: bindCollapse,
+        addCommentDialog: addCommentDialog
     };
-};
-
-window.jQuery(window).on('load', function() {
-    COMMENTS = COMMENTS(window.jQuery);
-});
+})(window.jQuery);

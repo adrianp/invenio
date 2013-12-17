@@ -137,9 +137,6 @@ def model_note(json):
         result.marker_type = json['marker']
         result.marker_location = json['location']
 
-        # new notes have clearly not been considered by record authors yet
-        result.viewed = False
-
         if type(json['body']) == dict:
             # we need to model child notes also
             result.child_note = model_note(json['body'])

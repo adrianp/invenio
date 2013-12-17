@@ -1,6 +1,7 @@
 'use strict';
 
 /* global PDF_VIEWER */
+/* exported PDF_NOTES_HELPER */
 
 /**
  * Utilities for combining the PDF preview and Notes features.
@@ -8,7 +9,7 @@
  * @module
  * @param {jQuery} $ usually window's jQuery object.
  */
-var PDF_NOTES_HELPER = function($) {
+var PDF_NOTES_HELPER = (function($) {
 
     /**
      * Retrives the notes from the server via an AJAX request.
@@ -122,8 +123,4 @@ var PDF_NOTES_HELPER = function($) {
         getTextAreaFill: getTextAreaFill,
         setTextAreaFill: setTextAreaFill
     };
-};
-
-window.jQuery(window).on('load', function() {
-    PDF_NOTES_HELPER = PDF_NOTES_HELPER(window.jQuery);
-});
+})(window.jQuery);

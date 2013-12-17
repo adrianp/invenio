@@ -30,6 +30,7 @@ from flask.ext.login import current_user
 
 from invenio.modules.record_editor.models import Bibrec
 from invenio.modules.accounts.models import User
+from invenio.base.globals import cfg
 from invenio.base.signals import record_after_update
 from .noteutils import MARKERS
 
@@ -68,7 +69,7 @@ class CmtRECORDCOMMENT(db.Model):
     bibrec = db.relationship(Bibrec, backref='recordcomments')
     user = db.relationship(User, backref='recordcomments')
     replies = db.relationship('CmtRECORDCOMMENT', backref=db.backref('parent',
-        remote_side=[id], order_by=date_creation))
+                              remote_side=[id], order_by=date_creation))
     notes = db.relationship('CmtNOTE', backref='parent')
 
     @property
@@ -104,11 +105,38 @@ class CmtRECORDCOMMENT(db.Model):
                       db.Model.__table_args__)
 
 
+@event.listens_for(CmtRECORDCOMMENT.body, 'set')
+def extract_notes(target, value, oldvalue, initiator):
+    if cfg['CFG_COMMENTS_NOTES_ENABLED']:
+        from .noteutils import extract_notes_from_comment, model_note
+        revs = extract_notes_from_comment(value)
+        if len(revs) > 0:
+            for rev in revs:
+                r = model_note(rev)
+                target.notes.append(r)
+
+
+@event.listens_for(CmtRECORDCOMMENT.star_score, 'set')
+def remove_review_notes(target, value, oldvalue, initiator):
+    """Removes notes from reviews; we should do this in extract_notes(), but
+    currently there is no way of determining if the comment is a review there"""
+    if value > 0:
+        del target.notes[:]
+
+
 @event.listens_for(CmtRECORDCOMMENT, 'after_insert')
 def after_insert(mapper, connection, target):
-    """Updates reply order cache  and send record-after-update signal."""
+    """Actions to perform after persisting a comment"""
+
+    # send signal
     record_after_update.send(CmtRECORDCOMMENT, recid=target.id_bibrec)
 
+    # update comment notes
+    if cfg['CFG_COMMENTS_NOTES_ENABLED']:
+        for note in target.notes:
+            note.id_bibrec = target.id_bibrec
+
+    # update reply order cache
     from .api import get_reply_order_cache_data
     if target.in_reply_to_id_cmtRECORDCOMMENT > 0:
         parent = CmtRECORDCOMMENT.query.get(

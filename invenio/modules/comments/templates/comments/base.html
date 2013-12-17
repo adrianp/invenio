@@ -42,7 +42,9 @@
       {%- if current_user.is_guest -%}
         <a id="add-comment" class="btn" href="{{ url_for('webaccount.login', referer=request.url) }}">
       {%- else -%}
-        <a id="add-comment" class="btn" data-toggle="modal" data-href="{{ url_for('comments.add_comment', recid=recid) }}">
+        <a id="add-comment" class="btn"
+           onclick="COMMENTS.addCommentDialog(event, this)"
+           data-href="{{ url_for('comments.add_comment', recid=recid) }}">
       {%- endif-%}
           <i class="icon-pencil"></i>
           {{ _('write comment') }}
@@ -92,7 +94,7 @@
                 </div>
             </div>
             <div id="pdf-preview"
-                 data-toggle="modal"
+                 onclick="COMMENTS.addCommentDialog(event, this)"
                  data-href="{{ url_for('comments.add_comment', recid=recid) }}"
                  data-href-login="{{ url_for('webaccount.login', referer=request.url) }}"
                  class="centered"

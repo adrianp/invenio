@@ -141,16 +141,6 @@ def add_comment(recid):
         c.date_creation = datetime.now()
         c.star_score = 0
 
-        if cfg['CFG_COMMENTS_NOTES_ENABLED']:
-            from .noteutils import extract_notes_from_comment, model_note
-            revs = extract_notes_from_comment(c.body)
-            if len(revs) > 0:
-                for rev in revs:
-                    r = model_note(rev)
-                    r.id_cmtRECORDCOMMENT = c.id
-                    r.id_bibrec = recid
-                    c.notes.append(r)
-
         try:
             db.session.add(c)
             db.session.commit()
@@ -253,7 +243,8 @@ def report(recid, id):
             nb_abuse_reports=CmtRECORDCOMMENT.nb_abuse_reports + 1),
             synchronize_session='fetch')
 
-        log_comment_action(cfg['CFG_WEBCOMMENT_ACTION_CODE']['REPORT_ABUSE'], id, recid)
+        log_comment_action(cfg['CFG_WEBCOMMENT_ACTION_CODE']['REPORT_ABUSE'],
+                           id, recid)
         flash(_('Comment has been reported.'), 'success')
     else:
         flash(_('Comment has been already reported.'), 'error')
@@ -268,10 +259,10 @@ def vote(recid, id, value):
     if CommentRights(id).can_perform_action():
         value = 1 if int(value) > 0 else 0
         CmtRECORDCOMMENT.query.filter(
-            CmtRECORDCOMMENT.id == id).update(dict(
-                nb_votes_total=CmtRECORDCOMMENT.nb_votes_total + 1,
-                nb_votes_yes=CmtRECORDCOMMENT.nb_votes_yes + value),
-                synchronize_session='fetch')
+            CmtRECORDCOMMENT.id == id). \
+            update(dict(nb_votes_total=CmtRECORDCOMMENT.nb_votes_total + 1,
+                        nb_votes_yes=CmtRECORDCOMMENT.nb_votes_yes + value),
+                   synchronize_session='fetch')
 
         log_comment_action(cfg['CFG_WEBCOMMENT_ACTION_CODE']['VOTE'], id, recid)
         flash(_('Thank you for your vote.'), 'success')
@@ -391,7 +382,8 @@ def notes(recid):
                                        CmtNOTE.marker_type,
                                        CmtNOTE.marker_location).all())
 
-    if CmtRECORDCOMMENT.query.filter(CmtRECORDCOMMENT.id_bibrec == recid).count() > 0:
+    if CmtRECORDCOMMENT.query \
+                       .filter(CmtRECORDCOMMENT.id_bibrec == recid).count() > 0:
         flash(_('This is a summary of all the comments that includes only the \
                 existing notes. The full discussion is available <a href="' +
                 url_for('comments.comments', recid=recid) +

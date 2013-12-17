@@ -20,6 +20,7 @@ along with Invenio; if not, write to the Free Software Foundation, Inc.,
 'use strict';
 
 /* global PDF_NOTES_HELPER */
+/* exported NOTES_POPOVER */
 
 /**
  * Utilities for displaying a popover in the add comments textarea showing how
@@ -28,7 +29,7 @@ along with Invenio; if not, write to the Free Software Foundation, Inc.,
  * @module
  * @param {jQuery} $ usually window's jQuery object.
  */
-var NOTES_POPOVER = function($) {
+var NOTES_POPOVER = (function($) {
 
     /**
      * Attaches a popover to the #comment-textarea element; the content should
@@ -64,8 +65,4 @@ var NOTES_POPOVER = function($) {
         // add popover in the comments.add stand-alone page
         bindPopover();
     });
-};
-
-window.jQuery(window).on('load', function() {
-    NOTES_POPOVER = NOTES_POPOVER(window.jQuery);
-});
+})(window.jQuery);

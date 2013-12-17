@@ -20,13 +20,14 @@ along with Invenio; if not, write to the Free Software Foundation, Inc.,
 'use strict';
 
 /* global _ */
+/* exported PDF_VIEWER */
 
 /**
  * PDF viewer presentation logic.
  *
  * @param {[jQuery} $ usually window's jQuery object.
  */
-var PDF_VIEWER = function($) {
+var PDF_VIEWER = (function($) {
 
     /**
      * Currently displayed page.
@@ -171,8 +172,4 @@ var PDF_VIEWER = function($) {
         MAX_PAGE: MAX_PAGE,
         bindPageChangeAction: bindPageChangeAction
     };
-};
-
-window.jQuery(window).on('load', function() {
-    PDF_VIEWER = PDF_VIEWER(window.jQuery);
-});
+})(window.jQuery);
