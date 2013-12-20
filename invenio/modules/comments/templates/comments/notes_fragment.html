@@ -77,7 +77,7 @@
             <i class="icon-chevron-down"></i>
             </a>
           <h4>
-            {{ _('Notes on') }} {{ get_note_title(key) }}
+            {{ _('Annotations on') }} {{ get_note_title(key) }}
           </h4>
             <div id="collapse-{{ wash_html_id(value['toggle']) }}"
                data-action="{{ url_for('comments.notes_toggle', recid=recid, path=value['toggle']) }}"

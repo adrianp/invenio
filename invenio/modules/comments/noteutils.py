@@ -51,14 +51,14 @@ MARKERS = {
 
 # description of the notes' markup, to be used in GUI
 # FIXME: move to Jinja2 template
-HOWTO = _("To leave a note use the following syntax:<br>\
-P.1: a note on page one<br>\
-P.1-3: a note on pages one to three<br>\
-P.1-3,5: a note on pages one to three and five<br>\
-F.2a: a note on subfigure 2a<br>\
-P.1: T.2: L.3: a note on the third line of table two, which appears on the first page<br>\
-G: a note on the general aspect of the paper<br>\
-R.[Ellis98]: a note on a reference<br><br>\
+HOWTO = _("To add an annotation use the following syntax:<br>\
+P.1: an annotation on page one<br>\
+P.1-3: an annotation on pages one to three<br>\
+P.1-3,5: an annotation on pages one to three and five<br>\
+F.2a: an annotation on subfigure 2a<br>\
+P.1: T.2: L.3: an annotation on the third line of table two, which appears on the first page<br>\
+G: an annotation on the general aspect of the paper<br>\
+R.[Ellis98]: an annotation on a reference<br><br>\
 The available markers are:")
 
 for KEY, VALUE in MARKERS.items():

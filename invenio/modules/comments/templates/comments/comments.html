@@ -20,9 +20,9 @@
 {%- extends "comments/base.html" -%}
 
 {%- block custom -%}
-  <div class="row{{ '-fluid' if not config.CFG_COMMENTS_PREVIEW_ENABLED }}">
-    {{ pdf_pane() }}
-    <div {{ 'class=span6' if config.CFG_COMMENTS_PREVIEW_ENABLED }}>
+  <div class="#row{{ '-fluid' if not config.CFG_COMMENTS_PREVIEW_ENABLED }}">
+    {#{ pdf_pane() }#}
+    <div {#{ 'class=span6' if config.CFG_COMMENTS_PREVIEW_ENABLED }#}>
       {%- if comments -%}
         <ul class="comments unstyled">
           {%- for c in comments recursive -%}

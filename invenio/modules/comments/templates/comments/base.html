@@ -52,7 +52,7 @@
     {%- elif option == 'notes' and config.CFG_COMMENTS_PREVIEW_ENABLED -%}
         <button id="all-notes-toggle" type="button" class="btn btn-default">
           <i class="icon-eye-open"></i>
-          Show all notes
+          {{ _("Show all annotations") }}
         </button>
     {%- endif -%}
 
@@ -72,7 +72,7 @@
         {%- else -%}
           <a class="btn" href="{{ url_for('comments.notes', recid=recid) }}">
         {%- endif -%}
-            {{ _('Notes') }}
+            {{ _('Annotations') }}
           </a>
       </div>
     {%- endif -%}
@@ -93,12 +93,17 @@
                     <button class="btn" id="last-page">»</button>
                 </div>
             </div>
+            <div class="centered">
+                <small id="page-counter">
+                    <i>{{ _("Click to add an annotation on the current page") }}</i>
+                </small>
+            </div>
             <div id="pdf-preview"
                  onclick="COMMENTS.addCommentDialog(event, this)"
                  data-href="{{ url_for('comments.add_comment', recid=recid) }}"
                  data-href-login="{{ url_for('webaccount.login', referer=request.url) }}"
                  class="centered"
-                 title="{{ _("Click to add comment on this page") }}">
+                 title="{{ _("Click to add an annotation on this page") }}">
                 {{ _('Preview not available yet.') }}
             </div>
         </div>
@@ -108,7 +113,7 @@
 {%- block record_content -%}
 
   {%- from "_translate.html" import translate -%}
-  {{ translate(["Page", "of"]) }}
+  {{ translate(["Page", "of", "Show all annotations", "Show page annotations"]) }}
 
   <div class="page-header">
     {{ format_record(recid, 'hs', ln=g.ln)|safe }}
@@ -119,7 +124,7 @@
       {%- if option == 'comments' -%}
         {{ _("Comments") }}
       {%- elif option == 'notes' -%}
-        {{_('Notes')}}
+        {{_('Annotations')}}
       {%- endif -%}
 
       <div class="pull-right">

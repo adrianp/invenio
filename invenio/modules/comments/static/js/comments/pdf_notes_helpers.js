@@ -1,6 +1,7 @@
 'use strict';
 
 /* global PDF_VIEWER */
+/* global _ */
 /* exported PDF_NOTES_HELPER */
 
 /**
@@ -67,10 +68,12 @@ var PDF_NOTES_HELPER = (function($) {
     function changeAllNotesButtonText() {
         if(!ALL_TOGGLED) {
             $('#all-notes-toggle').
-                html('<i class="icon-eye-open"></i> Show all notes');
+                html('<i class="icon-eye-open"></i> ' +
+                     _('Show all annotations'));
         } else {
             $('#all-notes-toggle').
-                html('<i class="icon-eye-open"></i> Show page notes');
+                html('<i class="icon-eye-open"></i> ' +
+                     _('Show page annotations'));
         }
     }
 

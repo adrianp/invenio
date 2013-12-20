@@ -385,7 +385,7 @@ def notes(recid):
     if CmtRECORDCOMMENT.query \
                        .filter(CmtRECORDCOMMENT.id_bibrec == recid).count() > 0:
         flash(_('This is a summary of all the comments that includes only the \
-                existing notes. The full discussion is available <a href="' +
+                existing annotations. The full discussion is available <a href="' +
                 url_for('comments.comments', recid=recid) +
                 '">here</a>.'), "info")
 
