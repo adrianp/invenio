@@ -92,7 +92,8 @@ def populate(packages=[], default_data=True, files=None,
                 "%s/bin/bibsort %d" % (CFG_PREFIX, job_id + 5),
                 "%s/bin/oairepositoryupdater -u admin" % CFG_PREFIX,
                 "%s/bin/oairepositoryupdater %d" % (CFG_PREFIX, job_id + 6),
-                "%s/bin/bibupload %d" % (CFG_PREFIX, job_id + 7)]:
+                # "%s/bin/bibupload %d" % (CFG_PREFIX, job_id + 7)
+                ]:
         if os.system(cmd):
             print "ERROR: failed execution of", cmd
             sys.exit(1)
