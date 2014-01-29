@@ -38,7 +38,7 @@
               <small>
                 {%- set parent = get_original_comment(n) -%}
                 {%- if parent.user -%}
-                  <img src="{{ parent.user.email|gravatar(size=14, default=url_for('static', filename='img/user-icon-1-16x16.gif', _external=True)) }}" alt="avatar"/>
+                  <img src="{{ parent.user.email|gravatar(size=14) }}" alt="avatar"/>
                   <a href="{{ url_for('webmessage.add', sent_to_user_nicks=parent.user.nickname) }}">
                     {{ parent.user.nickname }}
                   </a>

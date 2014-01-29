@@ -30,7 +30,7 @@
     <a class="navbar-content {{ a_class }}"
        href="{{ url_for('webmessage.view', msgid=m.id) }}">
         <div style="float:left; width: 30px; padding: 4px;">
-          <img src="{{ m.user_from.email|gravatar(size=30, default=url_for('static', filename='img/user-icon-1-24x24.gif', _external=True)) }}" alt="avatar"/>
+          <img src="{{ m.user_from.email|gravatar(size=30) }}" alt="avatar"/>
         </div>
         <div style="margin-left: 38px; padding: 4px;">
           <strong>{{ m.user_from.nickname }}</strong>
