@@ -65,6 +65,10 @@ def login(nickname=None, password=None, login_method=None, action='',
     if cfg.get('CFG_ACCESS_CONTROL_LEVEL_SITE') > 0:
         return abort(401)  # page is not authorized
 
+    if request.method == 'GET' and cfg['CFG_DISABLE_LOCAL_LOGIN'] and not request.args.get('forcelocal'):
+        from flask.ext.sso.config import SSO_LOGIN_ENDPOINT
+        return redirect(url_for(SSO_LOGIN_ENDPOINT, **request.args))
+
     if action:
         from invenio.modules.access.mailcookie import \
             InvenioWebAccessMailCookieError, \
@@ -96,6 +100,7 @@ def login(nickname=None, password=None, login_method=None, action='',
             flash(_("Problem with login."), "error")
 
     return render_template('accounts/login.html', form=form)
+
 
 
 @blueprint.route('/register', methods=['GET', 'POST'])
