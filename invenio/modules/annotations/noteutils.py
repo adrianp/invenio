@@ -175,7 +175,7 @@ def tree_put(tree, keys, value, path=None):
             tree[k]["path"] += ("-" if len(path) else "") + k
         else:
             if k not in tree:
-                tree[k] = {}
+                tree[k] = {"leaf": [], "path": path}
             tree[k] = tree_put(tree[k], keys[i + 1:l], value,
                                path + ("-" if len(path) else "") + k)
             tree[k]["path"] = k

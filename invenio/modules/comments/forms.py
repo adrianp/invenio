@@ -23,6 +23,7 @@ from invenio.base.i18n import _
 from invenio.utils.forms import InvenioBaseForm
 from wtforms import TextField, TextAreaField, \
     HiddenField, SelectField, validators
+from invenio.modules.annotations.noteutils import HOWTO
 
 
 class AddCmtRECORDCOMMENTForm(InvenioBaseForm):
@@ -39,6 +40,9 @@ class AddCmtRECORDCOMMENTForm(InvenioBaseForm):
         )
     ])
     in_reply_to_id_cmtRECORDCOMMENT = HiddenField(default=0)
+    notes_howto = HOWTO
+    pdf_page = HiddenField(validators=[validators.Optional(),
+                                       validators.NumberRange()])
 
 
 class AddCmtRECORDCOMMENTFormReview(AddCmtRECORDCOMMENTForm):

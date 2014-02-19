@@ -139,6 +139,10 @@ def add_comment(recid):
             db.session.add(c)
             db.session.commit()
             flash(_('Comment was sent'), "info")
+            from urlparse import urlparse
+            if 'notes' in urlparse(request.referrer).path:
+                return redirect(url_for('comments.notes', recid=recid) +
+                                '#' + form.pdf_page.data)
             return redirect(url_for('comments.comments', recid=recid))
         except:
             db.session.rollback()
@@ -195,7 +199,8 @@ def comments(recid):
         CmtRECORDCOMMENT.in_reply_to_id_cmtRECORDCOMMENT == 0,
         CmtRECORDCOMMENT.star_score == 0
     )).order_by(CmtRECORDCOMMENT.date_creation).all()
-    return render_template('comments/comments.html', comments=comments)
+    return render_template('comments/comments.html', comments=comments,
+                           option='comments')
 
 
 @blueprint.route('/<int:recid>/reviews', methods=['GET', 'POST'])
