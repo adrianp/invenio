@@ -21,7 +21,7 @@ from flask import g
 from werkzeug.local import LocalProxy
 
 from invenio.base.globals import cfg
-from invenio.modules.jsonalchemy.wrappers import SmartJson
+from invenio.modules.jsonalchemy.wrappers import SmartJsonLD
 from invenio.modules.jsonalchemy.jsonext.engines.mongodb_pymongo import \
     MongoDBStorage
 from invenio.modules.jsonalchemy.jsonext.readers.json_reader import reader
@@ -39,7 +39,7 @@ def get_storage_engine():
     return g.annotations_storage_engine
 
 
-class Annotation(SmartJson):
+class Annotation(SmartJsonLD):
     storage_engine = LocalProxy(get_storage_engine)
 
     @classmethod
@@ -56,10 +56,67 @@ class Annotation(SmartJson):
     def search(cls, query):
         return cls.storage_engine.search(query)
 
+    def translate(self, context_name, ctx):
+        dump = self.dumps()
+        model = dump["__meta_metadata__"]['__additional_info__']['model'][0]
+        res = {}
+        if context_name == "oaf":
+            from invenio.modules.accounts.models import User
+
+            res["@id"] = cfg["CFG_SITE_URL"] + \
+                "/api/annotations/export/?_id=" + \
+                dump["_id"]
+            res["@type"] = "oa:Annotation"
+
+            u = User.query.filter(User.id == dump["who"]).one()
+            res["annotatedBy"] = {
+                "@id": cfg["CFG_SITE_URL"] +
+                "/api/accounts/account/?id=" +
+                str(u.id),
+                "@type": "foaf:Person",
+                "name": u.nickname,
+                "mbox": {"@id": "mailto:" + u.email}}
+
+            if model == "annotation":
+                res["hasTarget"] = {
+                    "@type": ["cnt:ContentAsXML", "dctypes:Text"],
+                    "@id": cfg["CFG_SITE_URL"] + dump["where"],
+                    "cnt:characterEncoding": "utf-8",
+                    "format": "text/html"}
+            elif model == "annotation_note":
+                res["hasTarget"] = {
+                    "@id": "oa:hasTarget",
+                    "@type": "oa:SpecificResource",
+                    "hasSource": cfg["CFG_SITE_URL"] + "/record/" +
+                    str(dump["where"]["record"]),
+                    "hasSelector":  {
+                        "@id": "oa:hasSelector",
+                        "@type": "oa:FragmentSelector",
+                        "value": dump["where"]["marker"],
+                        "dcterms:conformsTo": cfg["CFG_SITE_URL"] + "/api/annotations/notes_specification"}}
+
+            res["motivatedBy"] = "oa:commenting"
+
+            res["hasBody"] = {
+                "@id": "oa:hasBody",
+                "@type": ["cnt:ContentAsText", "dctypes:Text"],
+                "chars": dump["what"],
+                "cnt:characterEncoding": "utf-8",
+                "format": "text/plain"}
+
+            res["annotatedAt"] = dump["when"]
+            return res
+        raise NotImplementedError
+
+
+def get_jsonld_multiple(annos, context="oaf", new_context={}, format="full"):
+    return [Annotation(a).get_jsonld(context=context, new_context=new_context,
+                                     format=format) for a in annos]
+
 
 def add_annotation(model='annotation', **kwargs):
     Annotation.create(kwargs, model)
 
 
 def get_annotations(which):
-    return Annotation.search(which)
+    return list(Annotation.search(which))

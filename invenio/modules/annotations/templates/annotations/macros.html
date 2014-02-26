@@ -70,7 +70,7 @@
 {%- macro view(annotations) -%}
   <ul>
     {%- for anno in annotations -%}
-      <li>{{ get_username_by_id(anno.who) }} @ {{ anno.when|invenio_format_date }}: {{ anno.what }}</li>
+      <li>{{ get_username_by_id(anno.who) }} @ {{ anno.when }}: {{ anno.what }}</li>
     {%- endfor -%}
   </ul>
 {%- endmacro -%}
